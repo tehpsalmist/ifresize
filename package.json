@@ -1,17 +1,23 @@
 {
   "name": "ifresize",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/ZnSize.js",
   "license": "MIT",
   "devDependencies": {
     "parcel-bundler": "^1.12.3",
     "standard": "^12.0.1",
     "testcafe": "^1.1.4"
   },
+  "files": [
+    "dist/ZnSize.js",
+    "dist/ZnSize.js.map"
+  ],
   "scripts": {
-    "dev": "parcel *.html",
-    "build": "parcel build *.html",
-    "now-build": "npm run build",
+    "dev-env": "parcel *.html",
+    "build-env": "parcel build *.html",
+    "now-build": "npm run build-env",
+    "dev": "parcel watch js/ZnSize.js --no-hmr",
+    "build": "parcel build js/ZnSize.js",
     "test": "testcafe chrome:headless,firefox:headless tests/*-test.js"
   },
   "dependencies": {

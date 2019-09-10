@@ -31,14 +31,18 @@ const getMaxElement = (side, elements) => {
   let Side = capitalizeFirstLetter(side)
   for (let i = 0; i < elementsLength; i++) {
     elVal = elements[i].getBoundingClientRect()[side] + getComputedStyle(`margin${Side}`, elements[i])
-    console.log({ 'element': elements[i], 'val': elVal })
     if (elVal > maxVal) {
-      console.log({ 'elVal': elVal, 'maxVal': maxVal })
+      // console.log({ 'elVal': elVal, 'maxVal': maxVal })
       maxVal = elVal
     }
   }
-  console.log({'getMaxElement.maxVal': maxVal})
+  // console.log({'getMaxElement.maxVal': maxVal})
   return maxVal
+}
+
+const getSmallestOffsetLeft = () => {
+  return Array.from(document.querySelectorAll('body *'))
+    .reduce((lowest, element) => Math.min(element.offsetLeft, lowest), 0)
 }
 
 const heightCalc = {
@@ -129,6 +133,13 @@ const widthCalc = {
   furthestElement: () => {
     return getMaxElement('right', getAllElements())
   },
+  eastToWest: () => {
+    if (document.body.scrollWidth > document.body.clientWidth) {
+      return getSmallestOffsetLeft() + document.body.scrollWidth
+    }
+
+    return getSmallestOffsetLeft() + widthCalc.furthestElement()
+  },
   /**
      * Get the min value of all the base measurements
      * @returns {number}
@@ -183,14 +194,27 @@ const capitalizeFirstLetter = (string) => {
   return string.charAt(0).toUpperCase() + string.slice(1)
 }
 
-class ZnSize {
+export default class ZnSize {
   /**
-     * @param client
-     * @param methods
-     */
-  constructor (client, methods) {
-    methods = typeof methods !== 'undefined' ? methods : {}
-    this.client = client
+   * UpdateRequester Function
+   *
+   * @callback UpdateRequester
+   * @param {{ width: string, height: string }} dimensions
+   *
+   * @returns {Promise<{ width: string, height: string }>}
+   */
+
+  /**
+   * ZnSize
+   * Auto-detects sizing needs, and executes resizing on command
+   * 
+   * @param {UpdateRequester} updateRequester
+   * @param {Object} methods
+   * @param {'bodyOffset' | 'bodyScroll' | 'documentElementOffset' | 'documentElementScroll' | 'furthestElement' | 'min' | 'max'} methods.height
+   * @param {'bodyOffset' | 'bodyScroll' | 'documentElementOffset' | 'documentElementScroll' | 'furthestElement' | 'min' | 'max' | 'scroll'} methods.width
+   */
+  constructor (updateRequester, methods = {}) {
+    this.updateRequester = updateRequester
     this.timer = null
     this.heightMethod = typeof methods.height === 'string' ? methods.height : 'bodyOffset'
     this.widthMethod = typeof methods.width === 'string' ? methods.width : 'scroll'
@@ -228,7 +252,7 @@ class ZnSize {
      * Sets the page size automatically or uses the supplied dimensions
      * @param dimensions
      */
-  setSize (dimensions) {
+  sendDimensions (dimensions) {
     const height = this.currentHeight
     const width = this.currentWidth
     this.currentHeight = this.getHeight()
@@ -257,8 +281,8 @@ class ZnSize {
     if (!dimensions.width) {
       dimensions.width = `${this.currentWidth}px`
     }
-    console.log(dimensions)
-    this.client.call('resize', { dimensions }, null, Infinity)
+
+    this.updateRequester(dimensions)
   }
 
   /**
@@ -267,7 +291,7 @@ class ZnSize {
      * @returns {null}
      */
   autoSize (timeout) {
-    // timeout = typeof timeout === "undefined" ? 100 : timeout //Currently override MutationObserver due to some bugs
+    // timeout = typeof timeout === "undefined" ? 100 : timeout // Currently override MutationObserver due to some bugs
     if (this.auto) {
       this.auto = false
       if (this.observer === null) {
@@ -284,10 +308,10 @@ class ZnSize {
       this.removeEventHandlers()
       return null
     }
-    this.setSize()
+    this.sendDimensions()
     typeof timeout === 'number'
       ? this.timer = setInterval(() => {
-        this.setSize()
+        this.sendDimensions()
       }, timeout)
       : this.observer = this.setupMutation()
     this.addEventHandlers()
@@ -308,7 +332,7 @@ class ZnSize {
 
   handleEvent (e) {
     console.table(e)
-    this.setSize()
+    this.sendDimensions()
   }
 
   /**
@@ -318,7 +342,7 @@ class ZnSize {
      */
   getWidth (method) {
     method = typeof method === 'undefined' ? this.widthMethod : method
-    console.log({'widthMethod': method})
+    // console.log({'widthMethod': method})
     return widthCalc[method]()
   }
 
@@ -329,7 +353,7 @@ class ZnSize {
      */
   getHeight (method) {
     method = typeof method === 'undefined' ? this.heightMethod : method
-    console.log({'heightMethod': method})
+    // console.log({'heightMethod': method})
     return heightCalc[method]()
   }
 
@@ -349,7 +373,7 @@ class ZnSize {
     let MutationClass = window.MutationObserver || window.WebKitMutationObserver
     let observer = new MutationClass((mutations, observer) => {
       setTimeout(() => {
-        this.setSize()
+        this.sendDimensions()
       }, 16)
     })
     observer.observe(document.querySelector('body'), {
@@ -375,5 +399,3 @@ class ZnSize {
     return !Math.abs(originalValue - newValue) <= tolerance
   }
 }
-
-export default ZnSize
