@@ -320,18 +320,17 @@ export default class ZnSize {
 
   addEventHandlers () {
     this.events.forEach(value => {
-      window.addEventListener(value, this.handleEvent)
+      window.addEventListener(value, this.handleEvent.bind(this))
     })
   }
 
   removeEventHandlers () {
     this.events.forEach(value => {
-      window.removeEventListener(value, this.handleEvent)
+      window.removeEventListener(value, this.handleEvent.bind(this))
     })
   }
 
   handleEvent (e) {
-    console.table(e)
     this.sendDimensions()
   }
 
