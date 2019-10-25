@@ -1,4 +1,6 @@
-dist/
+dist/*
+!dist/ZnSize.js
+!dist/ZnSize.js.map
 .idea/
 .cache/
 node_modules/
