@@ -17,8 +17,8 @@ const getComputedStyle = (prop, element) => {
 
 /**
  * Get the largest element based on the target page side & given elements
- * @param side
- * @param elements
+ * @param {'right' | 'bottom'} side
+ * @param {HTMLElement[]} elements
  * @returns {number}
  */
 const getMaxElement = (side, elements) => {
@@ -29,7 +29,20 @@ const getMaxElement = (side, elements) => {
   let Side = capitalizeFirstLetter(side)
 
   for (let i = 0; i < elementsLength; i++) {
-    elVal = elements[i].getBoundingClientRect()[side] + getComputedStyle(`margin${Side}`, elements[i])
+    if (elements[i].nodeType === 1) {
+      elVal = elements[i].getBoundingClientRect()[side] + (
+        elements[i].style[`margin${Side}`] === 'auto'
+          ? 0
+          : getComputedStyle(`margin${Side}`, elements[i])
+      )
+    }
+
+    if (elements[i].nodeType === 3) {
+      const range = document.createRange()
+      range.selectNode(elements[i])
+
+      elVal = range.getBoundingClientRect()[side]
+    }
 
     if (elVal > maxVal) {
       maxVal = elVal
@@ -83,6 +96,36 @@ const capitalizeFirstLetter = (string) => {
   return string.charAt(0).toUpperCase() + string.slice(1)
 }
 
+/**
+ * Determine if an element has its height set to something relative to its parent(s)
+ * @param {HTMLElement} element
+ */
+const elementHasRelative = dimension => element => ['%', 'vh', 'vw', 'vmin', 'vmax'].some(symbol => element.style[dimension].includes(symbol))
+
+/**
+ * 
+ * @param  {...HTMLElement} elements 
+ */
+const recursivelyGetHeight = elements => {
+  elements = Array.from(elements).filter(el => el.nodeName !== 'SCRIPT')
+
+  if (elements.length === 1 && elementHasRelative('height')(elements[0])) {
+    return recursivelyGetHeight(elements[0].childNodes)
+  }
+
+  return getMaxElement('bottom', elements)
+}
+
+const recursivelyGetWidth = elements => {
+  elements = Array.from(elements).filter(el => el.nodeName !== 'SCRIPT')
+
+  if (elements.length === 1) {
+    return recursivelyGetWidth(elements[0].childNodes)
+  }
+
+  return getMaxElement('right', elements)
+}
+
 const heightCalc = {
   /**
    * Get the body.offsetHeight
@@ -111,6 +154,17 @@ const heightCalc = {
    */
   documentElementScroll: () => {
     return document.documentElement.scrollHeight
+  },
+  /**
+   * Get the total width of the top-level elements on the page
+   * @returns {number}
+   */
+  content: () => {
+    if (document.body.scrollHeight > document.body.clientHeight) {
+      return document.body.scrollHeight
+    }
+
+    return recursivelyGetHeight(getTopLevelElements())
   },
   /**
    * Get the height of the element that's closest to the bottom of the page
@@ -180,7 +234,7 @@ const widthCalc = {
       return getSmallestOffsetLeft() + document.body.scrollWidth
     }
 
-    return getSmallestOffsetLeft() + widthCalc.furthestElement()
+    return getSmallestOffsetLeft() + recursivelyGetWidth(getTopLevelElements())
   },
   /**
    * Get the min value of all the base measurements
