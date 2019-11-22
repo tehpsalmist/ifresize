@@ -1,7 +1,7 @@
 {
-  "name": "ifresize",
+  "name": "content-sizer",
   "version": "0.1.0",
-  "main": "dist/ZnSize.js",
+  "main": "dist/content-sizer.js",
   "license": "MIT",
   "devDependencies": {
     "parcel": "^1.12.3",
@@ -9,16 +9,15 @@
     "testcafe": "^1.1.4"
   },
   "files": [
-    "dist/ZnSize.js",
-    "dist/ZnSize.js.map"
+    "dist/content-sizer.js",
+    "dist/content-sizer.js.map"
   ],
   "scripts": {
     "dev-env": "parcel *.html",
     "build-env": "parcel build *.html",
     "now-build": "npm run build-env",
-    "dev": "parcel watch js/ZnSize.js --no-hmr",
-    "build": "parcel build js/ZnSize.js",
+    "dev": "parcel watch js/content-sizer.js --no-hmr",
+    "build": "parcel build js/content-sizer.js",
     "test": "testcafe chrome:headless,firefox:headless tests/*-test.js"
-  },
-  "dependencies": {}
+  }
 }
